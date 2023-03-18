@@ -19,11 +19,11 @@
 
 
 ## Configuration
-   * configure in `$HOME/.ldapsync.cfg` your server credentials (see `ldapsync.cfg` as example)
-   * change (at least) DOMAIN and LDAP_SEARCH_BASE (potentially LDAP filters also) in `spec2policy.py`
+   * configure in `$HOME/.ldapsync.cfg`  with your server credentials, change also domain, ldap search_base and search_filter 
+     (see `ldapsync.cfg` as example),
    * (optional) If the shared secret provider is installed on the HomeServer, you can use it to create the ADMINAUTH Token. 
                  The ADMINAUTH token can also be set manually by editing it in the ldapcfg file.
-   *  For the room creation process to work it is recommended to access the homeserver directly thru port 8008 and not via matrix-corporal
+   *  For the room creation process to work it is recommended to access the homeserver directly and not via matrix-corporal
 ## Usage
 *  To generate the policy file, type: `$ ./spec2policy.py input.yml policy.json`
 *  to push the policy to matrix-corporal, type `$ curl -s --insecure -XPUT --data "@$(pwd)/policy.json" -H 'Authorization: Bearer ......' https://matrix.domain.com/_matrix/corporal/policy | jq .`
