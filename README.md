@@ -42,7 +42,9 @@ ldapgroups-forbidencryptedroomcreation:
 ldapgroups-forbidunencryptedroomcreation:
    - ldapgroup2
 ---
-#list of spaces and rooms. Rooms can be attached to a space with setting the entry childof
+#list of spaces and rooms. 
+#Rooms can be attached to a space with setting the entry childof
+# In this example one private space "Spacename" with the private room "Roomname" will be created plus the corresonding policy.json for matrix-corporal 
 - space: SpaceName
   ldapgroups:
     - ldapgroup1: 50 #this means ldapgroup1 has in space SpaceName powerlevel 50 (default Moderator)
