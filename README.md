@@ -32,6 +32,7 @@
 
 ~~~
 ---
+ldap-matrix: version 0.3 
 #here set flags on user level based on LDAP Group memberships:
 ldapgroups-forbidroomcreation:
    - ldapgroup1
@@ -59,7 +60,6 @@ ldapgroups-forbidunencryptedroomcreation:
 
 * On the first part of the yaml file, set the user based flags for the members of *ldapgroups-forbidroomcreation* and *ldapgroups-forbidencryptedroomcreation* and *forbidunencryptedroomcreation*. 
 If no userbased flags are set, the flags are globally set to false in the policy file. 
-However, for the program to run, the uppersection cannot be an empty file. In that case just put an arbitrary line in yaml format in there. it will have no effect.
 
 * On the second part, list all spaces/rooms with their ldapgroups, individual ldapusers and with *childof* the parent space of each room, that you want to place in a space. 
 * All the rooms and spaces are created as private rooms by default. This can be adjusted by modifying the appropriate functions in spec2policy.py 
