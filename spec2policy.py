@@ -554,8 +554,8 @@ for user in USERS:
     user_data = {}
     user_data['id'] = '@' + user + ':' + DOMAIN
     user_data['active'] = True
-    user_data['authCredential'] = "http://matrix-ma1sd:8090/_matrix-internal/identity/v1/check_credentials"
-    user_data['authType'] = "rest"
+    user_data['authCredential'] = "some-initialpassword"
+    user_data['authType'] = "passthrough"
     user_data['joinedCommunityIds'] = USER_DATA[user]['matrix-groups']
     user_data['joinedRoomIds'] = USER_DATA[user]['matrix-rooms']
     user_data['forbidRoomCreation'] = USER_DATA[user]['forbidroomcreation']
