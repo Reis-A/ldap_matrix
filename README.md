@@ -21,8 +21,9 @@
 ## Configuration
    * configure in `$HOME/.ldapsync.cfg` your server credentials (see `ldapsync.cfg` as example)
    * change (at least) DOMAIN and LDAP_SEARCH_BASE (potentially LDAP filters also) in `spec2policy.py`
-   * If the shared secret provider is installed on the HomeServer, you can
-     For the room creation process to work it is recommended to access the homeserver directly thru port 8008 and not through matrix-corporal
+   * If the shared secret provider is installed on the HomeServer, you can use it to create the ADMINAUTH Token. 
+     The ADMINAUTH token can also be set manually by editing it in the spec2policy.py file.
+     For the room creation process to work it is recommended to access the homeserver directly thru port 8008 and not via matrix-corporal
 ## Usage
 *  To generate the policy file, type: `$ ./spec2policy.py input.yml policy.json`
 *  to push the policy to matrix-corporal, type `$ curl -s --insecure -XPUT --data "@$(pwd)/policy.json" -H 'Authorization: Bearer ......' https://matrix.domain.com/_matrix/corporal/policy | jq .`
@@ -63,11 +64,11 @@ ldapgroups-forbidunencryptedroomcreation:
 * On the first part of the yaml file, set the user based flags for the members of *ldapgroups-forbidroomcreation* and *ldapgroups-forbidencryptedroomcreation* and *forbidunencryptedroomcreation*. 
 If no userbased flags are set, the flags are globally set to false in the policy file. 
 
-###Creation of Rooms and Spaces
+### Creation of Rooms and Spaces
 * On the second part of the yaml file, list all spaces/rooms with their ldapgroups, individual ldapusers and with *childof* the parent space of each room, that you want to place in a space. 
 * All the rooms and spaces are created as private rooms by default. This can be adjusted by modifying the appropriate functions in spec2policy.py 
 
-###Assign Powerlevels by LDAPgroup memberships
+### Assign Powerlevels by LDAPgroup memberships
 
 For any ldapuser entry or ldapgroup entry of a room or space, one can optionally set the powerlevel.
 Ldap_matrix reads the current powerlevels of each managed room and updates the powerlevel entrys with the settings in the yaml file.
