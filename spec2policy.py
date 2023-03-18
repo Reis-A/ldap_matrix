@@ -45,28 +45,27 @@ policyfile = args.policyfile
 #IGNORED_ROOMS = [ 'testchannel' ]
 
 ## Matrix URL API constants
-#ideally the policy is created on the matrixserver directly, so no security issue with shared-secret
-DOMAIN = 'matrix.domain.com'
-DOMAINURL = 'http://'+ DOMAIN
-MATRIX = 'http://' + DOMAIN + ':8008/_matrix/client/r0'
-ADMIN = 'http://' + DOMAIN + ':8008/_synapse/admin/v1'
-
-## LDAP server constants
-LDAP_SERVER_IP = "10.10.10.10"
-LDAP_SEARCH_BASE = 'dc=domain,dc=com'
-## LDAP query to find users
-LDAP_USER_QUERY = '(&(objectClass=person)(!(uid=appli*))(!(ou:dn:=disabled_accounts)))'
-
-## LDAP and Matrix credentials from ini file
+## Matrix credentials from ini file
 config = configparser.ConfigParser()
 config.read(user_config)
-MATRIX_ADMIN_ACCOUNT = config['matrix']['AdminUser']
-MATRIX_ADMIN_PASSWORD = config['matrix']['AdminPassword']
-#shared secret used instead of password
+DOMAIN = config['matrix']['domain']
+DOMAINURL = 'http://'+ DOMAIN
+MATRIX = 'http://' + DOMAIN + ':8008/_matrix/client/v3'
+ADMIN = 'http://' + DOMAIN + ':8008/_synapse/admin/v1'
+MATRIX_ADMIN_ACCOUNT_short = config['matrix']['AdminUser']
+MATRIX_ADMIN_ACCOUNT = '@'+ MATRIX_ADMIN_ACCOUNT_short +':'+ DOMAIN
 MATRIX_SHARED_SECRET = config['matrix']['SharedSecret']
 
+TOKEN = config['matrix']['AdminToken'] #TOKEN from ldapcfg file
+ADMINAUTH = {'Authorization': 'Bearer ' + str(TOKEN)}
+
+## LDAP credentials from ini file
+LDAP_SERVER_IP = config['ldap']['serverip']
+LDAP_SEARCH_BASE = config['ldap']['search_base']
+## LDAP query to find users
+LDAP_USER_QUERY = config['ldap']['user_filter']
 LDAP_BIND_ACCOUNT = config['ldap']['BindAccount']
-LDAP_BIND_PASSWORD = config['ldap']['BindPassword']
+LDAP_BIND_PASSWORD = config['ldap']['BindPassword'
 
 # functions
 
@@ -145,12 +144,48 @@ def move_room(roomname, parentroom, roommap,AUTH):
        #print(list(roommap))
        #list(roommap).index({'name': roomname})     
 
-
-
-
        #print(json.dumps(payload))
        response=requests.put(url,data=json.dumps(payload), headers=AUTH)
        return None
+
+                                    
+def set_powerlevel(room_id, userdict, groupdict, useringroup,AUTH):
+        #read current powerlevels
+        url=DOMAINURL+':8008/_matrix/client/r0/rooms/'+room_id+'/state/m.room.power_levels'
+        response=requests.get(url, headers=AUTH)
+        s=json.loads(response.text)
+        #print(s)
+        #add new powerlevels to ldapgroups
+        grouplist=[]
+        valueslistforgroups=[]
+        for u in range(len(ldapgroupsdict)):
+           if type(ldapgroupsdict[u])!=str:
+              grouplist+=ldapgroupsdict[u].keys()
+              valueslistforgroups+=ldapgroupsdict[u].values()
+
+        for i in range(len(grouplist)):
+            for u in useringroup[grouplist[i]]:
+              user_longid='@'+u+':'+DOMAIN
+              s['users'][user_longid]=valueslistforgroups[i] #adduser to users -> new payload for making the pwoerlevels
+
+        #add new powerlevels for user
+        userlist=[]
+        valueslist=[]
+        for u in range(len(ldapusersdict)):
+           if type(ldapusersdict[u])!=str:
+              userlist+=ldapusersdict[u].keys()
+              valueslist+=ldapusersdict[u].values()
+        for i in range(len(userlist)):
+              user_longid='@'+userlist[i]+':'+DOMAIN
+          #    print(user_longid)
+              s['users'][user_longid]=valueslist[i] #adduser to users -> new payload for making the pwoerlevels
+       # print(s)
+        response=requests.put(url, data=json.dumps(s), headers=AUTH)
+
+        #work!s if ppl are not members of the rooms that is no problem, they receive their powerlevels as soon they become member of the room
+        #only powerlevel added to existing ones. so powerlevels stay manually manageble with the clients :)
+       # print(response.content)  
+        return None
 
 
 def id_room(roomname,roommap):
@@ -274,7 +309,7 @@ def policy_update_users(list_of_users):
 ## initial policy
 POLICY = {}
 
-ADMINAUTH = obtain_access_token(MATRIX_ADMIN_ACCOUNT, DOMAINURL, MATRIX_SHARED_SECRET)
+#ADMINAUTH = obtain_access_token(MATRIX_ADMIN_ACCOUNT, DOMAINURL, MATRIX_SHARED_SECRET)
 
 ## check admin user
 print ('Checking Matrix user...', end='')
@@ -344,34 +379,49 @@ policy_update_rooms(ROOMS_IDS)
 
 
 
-### compute total LDAPGROUPS list from spec (starting with the restricted ones)
+### compute total LDAPGROUPS list from spec 
 print('Computing LDAP groups...', end='')
 LDAPGROUPS=[]
+LDAPGROUPSdict=[]
 for i in spec:
-    LDAPGROUPS += i.get('ldapgroups',[])
-for g in [spec_flags.get('ldapgroups-forbidroomcreation',[])]:
-    LDAPGROUPS += g
-for g in [spec_flags.get('ldapgroups-forbidencryptedroomcreation',[])]:
-    LDAPGROUPS += g
-for g in [spec_flags.get('ldapgroups-forbidunencryptedroomcreation',[])]:
-    LDAPGROUPS += g
-LDAPGROUPS = sorted(set(LDAPGROUPS))
+     # print (i.get('ldapgroups'),[])
+      LDAPGROUPSdict += i.get('ldapgroups',[])
+for i in range(len(LDAPGROUPSdict)):
+    if type(LDAPGROUPSdict[i])==str:
+        LDAPGROUPS.append(LDAPGROUPSdict[i])
+    else:
+        LDAPGROUPS+=LDAPGROUPSdict[i].keys()
+
+#f spec_flags.get('ldapgroups-forbidroomcreation',[]) ==None:
+LDAPGROUPS+=spec_flags.get('ldapgroups-forbidroomcreation',[])
+LDAPGROUPS+=spec_flags.get('ldapgroups-forbidencryptedroomcreation',[])
+LDAPGROUPS+=spec_flags.get('ldapgroups-forbidunencryptedroomcreation',[])
+#LDAPGROUPS = sorted(set(LDAPGROUPS))
 print('Done.')
 print('')
 print("=== LDAP groups that are specified in any rooms or spaces ===")
 print(LDAPGROUPS)
 print('')
 
+
 ## compute total LDAPUSERS list from spec 
 print('Computing LDAP users...', end='')
 LDAPUSERS = []
-for u in [ s['ldapusers'] for s in spec if 'ldapusers' in s ]:
-   LDAPUSERS += u
+LDAPUSERSdict = []
+for i in spec:
+
+      LDAPUSERSdict += i.get('ldapusers',[])
+for i in range(len(LDAPUSERSdict)):
+    if type(LDAPUSERSdict[i])==str:
+        LDAPUSERS.append(LDAPUSERSdict[i])
+    else:
+        LDAPUSERS+=LDAPUSERSdict[i].keys()
+
 LDAPUSERS = sorted(set(LDAPUSERS))
 print('Done.')
 print('')
 print("=== LDAP users that are specified in the rooms ===")
-#print(LDAPUSERS)
+print(LDAPUSERS)
 print('')
 
 
@@ -396,7 +446,7 @@ for group in LDAPGROUPS:
     print(f'{len(USERSINGROUP[group])} users')
     USERS += USERSINGROUP[group]
 
-## add LDAPUSERS from spec that are directly mentionned
+## add LDAPUSERS from spec that are directly mentioned
 USERS += LDAPUSERS
 USERS = sorted(set(USERS))
 print('')
@@ -413,16 +463,38 @@ for user in USERS:
     USER_DATA[user]['forbidroomcreation'] = False
     USER_DATA[user]['forbidencryptedroomcreation'] = False
     USER_DATA[user]['forbidunencryptedroomcreation'] = False
+ldapusersdict =[]
+ldapgroupsdict=[]
 
 for i in spec:
-  #  # get all data fields of a given matrixgroup
- #   matrixgroup = i.get('matrixgroup')
+     ldapgroups=[]
+     ldapusers=[]
+
      ROOM = i.get('room', i.get('space',[]))
-     ldapusers = i.get('ldapusers', [])
-     ldapgroups = i.get('ldapgroups', [])
-   # restrictedrooms = i.get('restricted', [])
-     print(f'Room {ROOM} includes LDAP groups {ldapgroups}...')
-    # compute a global user list of all the groups
+     ldapusersdict = i.get('ldapusers', [])
+
+     for u in range(len(ldapusersdict)):
+       if type(ldapusersdict[u])==str:
+         ldapusers.append(ldapusersdict[u])
+       else:
+         ldapusers+=ldapusersdict[u].keys()
+
+
+     ldapgroupsdict =  i.get('ldapgroups', [])
+   #  print(ldapgroups)
+     for u in range(len(ldapgroupsdict)):
+       if type(ldapgroupsdict[u])==str:
+         ldapgroups.append(ldapgroupsdict[u])
+       else:
+         ldapgroups+=ldapgroupsdict[u].keys()
+
+     print(f'Room {ROOM} includes LDAP groups {ldapgroupsdict}...')
+     print(f'===Setting powerlevels for room {ROOM}')
+     ROOM_id=id_room(ROOM,existingrooms)
+     set_powerlevel(ROOM_id, ldapusersdict,ldapgroupsdict ,USERSINGROUP,ADMINAUTH)
+
+
+    #compute a global user list of all the groups
      for group in ldapgroups:
        ldapusers += USERSINGROUP[group]
     # for each user: add group+rooms membership to its data
@@ -432,6 +504,8 @@ for i in spec:
           id = matrix_room_id(existingrooms, ROOM)
           if id is not None and id not in USER_DATA[user]['matrix-rooms']:
                 USER_DATA[user]['matrix-rooms'].append(id)
+
+
 
 
 #old restricted group code
