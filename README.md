@@ -44,31 +44,38 @@ ldapgroups-forbidunencryptedroomcreation:
 #list of spaces and rooms. Rooms can be attached to a space with setting the entry childof
 - space: SpaceName
   ldapgroups:
-    - ldapgroup1
-    - ldapgroup2
+    - ldapgroup1: 50 #this means ldapgroup1 has in space SpaceName powerlevel 50 (default Moderator)
+    - ldapgroup2     # no powerlevel is set -> default behavior
   ldapusers:
-    - supplementaryuser1
+    - supplementaryuser1: 0  #powerlevel is set to 0 and previous powerlevel is overwritten by 0 if allowed
     - supplementaryuser2
  - room: Roomname
    ldapgroups:
     - ldapgroup1
    ldapusers:
-    - ldapuser1
+    - ldapuser1: 100 # this means supplementary user2 gets powerlevel 100 and is roomadmin of the room Roomname
    childof: SpaceName 
 ~~~
 
-* On the first part of the yaml file, set the user based flags for the members of *ldapgroups-forbidroomcreation* and *ldapgroups-forbidencryptedroomcreation* and *forbidunencryptedroomcreation*.
+* On the first part of the yaml file, set the user based flags for the members of *ldapgroups-forbidroomcreation* and *ldapgroups-forbidencryptedroomcreation* and *forbidunencryptedroomcreation*. 
+If no userbased flags are set, the flags are globally set to false in the policy file. 
+However, for the program to run, the uppersection cannot be an empty file. In that case just put an arbitrary line in yaml format in there. it will have no effect.
 
-* On the second part, list all spaces/rooms with their ldapgroups, individual ldapusers and with *childof* the parent space of each room, tha tu want to place in a space. 
-All the rooms and spaces are created as private rooms by default. This can be adjusted by modifying the appropriate functions in spec2policy.py 
+* On the second part, list all spaces/rooms with their ldapgroups, individual ldapusers and with *childof* the parent space of each room, that you want to place in a space. 
+* All the rooms and spaces are created as private rooms by default. This can be adjusted by modifying the appropriate functions in spec2policy.py 
+* For any ldapuser entry or ldapgroup entry of a room or space, one can optionally set the powerlevel.
+Ldap_matrix reads the current powerlevels of each managed room and updates the powerlevel entrys with the settings in the yaml file.
+If no powerlevel is set in the yaml file, ldap_matrix will make no changes to the powerlevels in the room. Be aware that once a user is given powerlevel 100, the powerlevel cannot be reduced easily anymore, since the roomadmin has the same powerlevel. 
 
 
 ## Caveats
 
-* There is no room deletion implemented. To delete rooms, use the synapse admin gui, for instance.
-* A Matrix Administrator Account has to be enrolled in all of the room. This is necessary for the conciliation of matrix-corporal to work.
+* There is no room deletion immplemented nor planned. To delete rooms, use the synapse admin gui, for instance.
+* A Matrix Administrator Account has to be enrolled in all of the managed rooms.
+ This is necessary for the conciliation of matrix-corporal to work. Since all the managed rooms are created by the admin account, this condition is automatically satisfied.
 
 ## Future ideas:
-* implement hooks
-* set room-powerlevels by ldapgroup-membership
+* implement hooks maybe with own API to better control room memberships.
+my goal: rooms are only allowed if at least one member of a certain ldap group ("teachers") is a member of the room.
+i think it is possible to do, but needs the implementation of an external REST API for matrix-corporal to check
 
