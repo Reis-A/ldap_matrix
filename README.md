@@ -59,13 +59,17 @@ ldapgroups-forbidunencryptedroomcreation:
     - ldapuser1: 100 # this means supplementary user2 gets powerlevel 100 and is roomadmin of the room Roomname
    childof: SpaceName 
 ~~~
-
+### Ldapgroup based flags
 * On the first part of the yaml file, set the user based flags for the members of *ldapgroups-forbidroomcreation* and *ldapgroups-forbidencryptedroomcreation* and *forbidunencryptedroomcreation*. 
 If no userbased flags are set, the flags are globally set to false in the policy file. 
 
-* On the second part, list all spaces/rooms with their ldapgroups, individual ldapusers and with *childof* the parent space of each room, that you want to place in a space. 
+###Creation of Rooms and Spaces
+* On the second part of the yaml file, list all spaces/rooms with their ldapgroups, individual ldapusers and with *childof* the parent space of each room, that you want to place in a space. 
 * All the rooms and spaces are created as private rooms by default. This can be adjusted by modifying the appropriate functions in spec2policy.py 
-* For any ldapuser entry or ldapgroup entry of a room or space, one can optionally set the powerlevel.
+
+###Assign Powerlevels by LDAPgroup memberships
+
+For any ldapuser entry or ldapgroup entry of a room or space, one can optionally set the powerlevel.
 Ldap_matrix reads the current powerlevels of each managed room and updates the powerlevel entrys with the settings in the yaml file.
 If no powerlevel is set in the yaml file, ldap_matrix will make no changes to the powerlevels in the room. Be aware that once a user is given powerlevel 100, the powerlevel cannot be reduced easily anymore, since the roomadmin has the same powerlevel. 
 
