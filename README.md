@@ -2,7 +2,7 @@
  
 * This scripts takes as input a specification in the form of a YAML file  and generates a so-called *Policy* file for Matrix Corporal reconciliator tool (see https://github.com/devture/matrix-corporal/blob/master/docs/policy.md) with data coming from an LDAP server in which groups are specified containing `memberUid` entries.
 * It also generates any rooms and spaces mentioned in the yaml file, that do not exist on the Synapse Homeserver yet.
-
+* It also assigns powerlevels to ldapusers in managed rooms
 
 ## Install with Pipenv
 
